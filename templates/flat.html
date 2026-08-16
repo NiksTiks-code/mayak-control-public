@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}{{ room_label|default('Квартира №' ~ flat_num) }} — МАЯК{% endblock %}
+
+{% block content %}
+<section class="page-heading fade-up">
+    <div>
+        <span class="breadcrumb">{{ current_contractor }} <b>/</b> {{ current_object }} <b>/</b> {{ current_system }}</span>
+        <h1>{{ room_label|default('Квартира №' ~ flat_num) }}</h1>
+        <p>Карточка выполнения работ, статуса и подтверждающих фотографий.</p>
+    </div>
+    <a href="/?contractor={{ current_contractor }}&object={{ current_object }}&system={{ current_system }}" class="button button-secondary">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+        Назад к шахматке
+    </a>
+</section>
+
+<section class="detail-layout fade-up delay-one">
+    <aside class="detail-summary glass-card">
+        <span class="detail-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg></span>
+        <span class="section-kicker">Текущий статус</span>
+        <h2>{{ room_short_label|default('Квартира ' ~ flat_num) }}</h2>
+        <div class="current-status status-panel-{{ flat_info.status }}">
+            <i></i>
+            {% if flat_info.status == 'green' %}Выполнено
+            {% elif flat_info.status == 'yellow' %}На проверке
+            {% elif flat_info.status == 'red' %}Отказ / нет доступа
+            {% else %}Не выполнено{% endif %}
+        </div>
+        <dl class="detail-list">
+            <div><dt>Объект</dt><dd>{{ current_object }}</dd></div>
+            <div><dt>Система</dt><dd>{{ current_system }}</dd></div>
+            <div><dt>Подрядчик</dt><dd>{{ current_contractor }}</dd></div>
+            <div><dt>Фотографий</dt><dd>{{ flat_info.photos|length }}</dd></div>
+        </dl>
+    </aside>
+
+    <div class="form-card glass-card">
+        <div class="section-title-row">
+            <div><span class="section-kicker">Обновление данных</span><h2>Выполнение работ</h2></div>
+        </div>
+
+        {% if error %}<div class="notice-error">{{ error }}</div>{% endif %}
+
+        <form method="POST" enctype="multipart/form-data" class="form-stack">
+            <input type="hidden" name="contractor" value="{{ current_contractor }}">
+            <input type="hidden" name="object" value="{{ current_object }}">
+            <input type="hidden" name="system" value="{{ current_system }}">
+
+            <div class="form-grid">
+                <label class="field-group">
+                    <span>Статус выполнения</span>
+                    <select name="status" class="status-select">
+                        <option value="white" {% if flat_info.status == 'white' %}selected{% endif %}>Не выполнено</option>
+                        <option value="yellow" {% if flat_info.status == 'yellow' %}selected{% endif %}>Проверка</option>
+                        <option value="red" {% if flat_info.status == 'red' %}selected{% endif %}>Отказ / нет доступа</option>
+                        {% if can_complete_work %}
+                        <option value="green" {% if flat_info.status == 'green' %}selected{% endif %}>Выполнено</option>
+                        {% endif %}
+                    </select>
+                </label>
+
+                <label class="field-group">
+                    <span>Дата выполнения</span>
+                    {% if can_edit_completion_date %}
+                    <input type="date" name="date" value="{{ flat_info.date }}">
+                    {% else %}
+                    <input type="date" name="date" value="{{ flat_info.date }}" {% if flat_info.date %}readonly{% endif %}>
+                    {% endif %}
+                </label>
+            </div>
+
+            <label class="field-group upload-field">
+                <span>Подтверждающие фотографии</span>
+                <input type="file" name="photos" accept="image/*" multiple>
+                <small>Можно выбрать несколько изображений. JPG, PNG, HEIC.</small>
+            </label>
+
+            {% if flat_info.photos %}
+            <div class="gallery-section">
+                <div class="section-title-row compact-row"><h3>Галерея</h3><span class="section-count">{{ flat_info.photos|length }} файлов</span></div>
+                <div class="gallery">
+                    {% for photo in flat_info.photos %}
+                    <img src="{{ url_for('static', filename='uploads/' + photo) }}"
+                         class="gallery-photo" alt="Фото помещения {{ flat_num }}" onclick="openPhoto(this.src)">
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="form-actions">
+                <button type="submit" class="button button-primary button-large">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2zM17 21v-8H7v8M7 3v5h8"/></svg>
+                    Сохранить изменения
+                </button>
+                <a href="/?contractor={{ current_contractor }}&object={{ current_object }}&system={{ current_system }}" class="button button-ghost">Отмена</a>
+            </div>
+        </form>
+    </div>
+</section>
+
+<div id="photoModal" class="photo-modal" onclick="closePhoto()" role="dialog" aria-label="Просмотр фотографии">
+    <img id="modalImg" alt="Увеличенная фотография">
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openPhoto(src) {
+    document.getElementById('photoModal').style.display = 'flex';
+    document.getElementById('modalImg').src = src;
+}
+function closePhoto() {
+    document.getElementById('photoModal').style.display = 'none';
+}
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') closePhoto();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#081B34">
+    <title>{% block title %}МАЯК — Контроль выполнения работ{% endblock %}</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/mayak-control-logo.png') }}">
+    <script>
+        document.documentElement.classList.add('ui-loading');
+        window.setTimeout(function () {
+            document.documentElement.classList.remove('ui-loading');
+        }, 1200);
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+    <div class="ambient-glow ambient-glow-one" aria-hidden="true"></div>
+    <div class="ambient-glow ambient-glow-two" aria-hidden="true"></div>
+
+    {% if session.get('user') %}
+    <header class="app-header">
+        <a class="brand" href="/" aria-label="МАЯК — на главную">
+            <span class="brand-logo-wrap">
+                <img src="{{ url_for('static', filename='images/mayak-control-logo.png') }}"
+                     class="brand-logo" alt="МАЯК Контроль">
+            </span>
+            <span class="brand-copy">
+                <strong>МАЯК</strong>
+                <small>Контроль выполнения работ</small>
+            </span>
+        </a>
+
+        <div class="header-actions">
+            <div class="user-badge">
+                <span class="user-avatar">{{ session.get('user', 'U')[0]|upper }}</span>
+                <span class="user-copy">
+                    {% if current_user_role == 'super_admin' %}
+                    <strong>Главный администратор</strong>
+                    <small>Super Admin</small>
+                    {% elif current_user_role == 'contractor' %}
+                    <strong>{{ session.get('user')|capitalize }}</strong>
+                    <small>Подрядчик</small>
+                    {% else %}
+                    <strong>Администратор</strong>
+                    <small>Заказчик</small>
+                    {% endif %}
+                </span>
+            </div>
+            <a class="button button-ghost button-compact" href="/logout" aria-label="Выйти из системы">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/></svg>
+                <span>Выйти</span>
+            </a>
+        </div>
+    </header>
+    {% endif %}
+
+    <main class="{% if session.get('user') %}page-shell{% else %}auth-shell{% endif %}">
+        {% block content %}{% endblock %}
+    </main>
+
+    {% block scripts %}{% endblock %}
+    <script src="{{ url_for('static', filename='microinteractions.js') }}" defer></script>
+</body>
+</html>

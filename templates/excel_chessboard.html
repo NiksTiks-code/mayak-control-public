@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Шахматка из Excel — МАЯК{% endblock %}
+
+{% block content %}
+<section class="page-heading fade-up">
+    <div>
+        <span class="eyebrow">Импортированные данные</span>
+        <h1>Шахматка из Excel</h1>
+        <p>{{ address }} · {{ system }} · {{ contractor }}</p>
+    </div>
+    <div class="page-actions">
+        {% if is_super_admin %}
+        <a href="/import_excel" class="button button-secondary">Новый импорт</a>
+        {% endif %}
+        <a href="/" class="button button-ghost">На главную</a>
+    </div>
+</section>
+
+<section class="content-card glass-card fade-up delay-one">
+    <div class="section-title-row">
+        <div><span class="section-kicker">План объекта · лист {{ chessboard.sheet_name|default('Excel') }}</span><h2>Расположение помещений</h2></div>
+        <span class="section-count">{{ chessboard.statistics.rooms }} помещений</span>
+    </div>
+    {% include "_excel_board.html" %}
+</section>
+{% endblock %}

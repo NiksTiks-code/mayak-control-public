@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}Импорт Excel — МАЯК{% endblock %}
+
+{% block content %}
+<section class="page-heading fade-up">
+    <div>
+        <span class="eyebrow">Универсальный импортёр</span>
+        <h1>Импорт шахматки</h1>
+        <p>Загрузите существующую структуру объекта из файла Excel.</p>
+    </div>
+    <a href="/" class="button button-secondary"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>На главную</a>
+</section>
+
+<section class="import-layout fade-up delay-one">
+    <div class="form-card glass-card">
+        <div class="section-title-row"><div><span class="section-kicker">Источник данных</span><h2>Параметры импорта</h2></div></div>
+        {% if error %}<div class="notice-error">{{ error }}</div>{% endif %}
+        <form action="/import_excel" method="POST" enctype="multipart/form-data" class="form-stack">
+            <div class="form-grid">
+                <label class="field-group">
+                    <span>Подрядчик</span>
+                    <select name="contractor" id="contractor-select" required>
+                        {% for contractor in contractors %}
+                        <option value="{{ contractor }}">{{ contractor }}</option>
+                        {% endfor %}
+                        {% if can_manage_contractors %}
+                        <option value="__create_contractor__">➕ Создать нового подрядчика</option>
+                        {% endif %}
+                    </select>
+                    {% if can_manage_contractors %}
+                    <small id="contractor-feedback" class="field-feedback" aria-live="polite"></small>
+                    {% endif %}
+                </label>
+                <label class="field-group">
+                    <span>Адрес</span>
+                    <input type="text" name="address" placeholder="Введите адрес нового объекта" required>
+                </label>
+                <label class="field-group">
+                    <span>Система</span>
+                    <select name="system">
+                        {% for system in import_systems %}
+                        <option value="{{ system }}">{{ system }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="field-group">
+                    <span>Файл Excel</span>
+                    <input type="file" name="excel_file" accept=".xlsx,.xlsm" required>
+                </label>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="button button-primary button-large">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 21h14a2 2 0 0 0 2-2v-4M3 15v4a2 2 0 0 0 2 2"/></svg>
+                    Перейти к проверке
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <aside class="import-guide glass-card">
+        <span class="detail-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h8M8 9h2"/></svg></span>
+        <h2>Перед загрузкой</h2>
+        <ul>
+            <li>Используйте формат XLSX или XLSM.</li>
+            <li>Сохраните исходную структуру строк и колонок.</li>
+            <li>Шахматка сохранится только после подтверждения.</li>
+        </ul>
+    </aside>
+</section>
+
+{% if can_manage_contractors %}
+<div class="mayak-modal" id="contractor-modal" hidden>
+    <div class="mayak-modal-backdrop" data-close-contractor-modal></div>
+    <section class="mayak-modal-dialog glass-card" role="dialog" aria-modal="true" aria-labelledby="contractor-modal-title">
+        <button type="button" class="mayak-modal-close" data-close-contractor-modal aria-label="Закрыть">×</button>
+        <span class="section-kicker">Справочник подрядчиков</span>
+        <h2 id="contractor-modal-title">Создать нового подрядчика</h2>
+        <p>Подрядчик сразу станет доступен для текущего импорта и сохранится в системе.</p>
+        <form id="contractor-create-form" class="form-stack" novalidate>
+            <label class="field-group">
+                <span>Название подрядчика</span>
+                <input type="text" id="contractor-name" name="name" maxlength="160" autocomplete="organization" placeholder="Например, ООО «МонтажСтрой»" required>
+            </label>
+            <div class="notice-error" id="contractor-modal-error" hidden aria-live="assertive"></div>
+            <div class="form-actions mayak-modal-actions">
+                <button type="button" class="button button-ghost" data-close-contractor-modal>Отмена</button>
+                <button type="submit" class="button button-primary" id="contractor-create-button">Создать</button>
+            </div>
+        </form>
+    </section>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if can_manage_contractors %}
+<script>
+(function () {
+    'use strict';
+
+    const select = document.getElementById('contractor-select');
+    const modal = document.getElementById('contractor-modal');
+    const form = document.getElementById('contractor-create-form');
+    const nameInput = document.getElementById('contractor-name');
+    const errorBox = document.getElementById('contractor-modal-error');
+    const feedback = document.getElementById('contractor-feedback');
+    const createButton = document.getElementById('contractor-create-button');
+    let previousValue = select.value;
+
+    function normalizeName(value) {
+        return value.trim().replace(/\s+/g, ' ');
+    }
+
+    function openModal() {
+        modal.hidden = false;
+        document.body.classList.add('modal-open');
+        errorBox.hidden = true;
+        errorBox.textContent = '';
+        nameInput.value = '';
+        window.requestAnimationFrame(function () {
+            modal.classList.add('is-open');
+            nameInput.focus();
+        });
+    }
+
+    function closeModal() {
+        modal.classList.remove('is-open');
+        document.body.classList.remove('modal-open');
+        window.setTimeout(function () { modal.hidden = true; }, 180);
+        if (select.value === '__create_contractor__') select.value = previousValue;
+    }
+
+    function selectContractor(name) {
+        let option = Array.from(select.options).find(function (item) {
+            return item.value === name;
+        });
+        if (!option) {
+            option = new Option(name, name);
+            select.insertBefore(option, select.querySelector('option[value="__create_contractor__"]'));
+        }
+        select.value = name;
+        previousValue = name;
+    }
+
+    select.addEventListener('focus', function () {
+        if (select.value !== '__create_contractor__') previousValue = select.value;
+    });
+    select.addEventListener('change', function () {
+        if (select.value === '__create_contractor__') {
+            openModal();
+        } else {
+            previousValue = select.value;
+        }
+    });
+
+    modal.querySelectorAll('[data-close-contractor-modal]').forEach(function (button) {
+        button.addEventListener('click', closeModal);
+    });
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && !modal.hidden) closeModal();
+    });
+
+    form.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        const name = normalizeName(nameInput.value);
+        if (!name) {
+            errorBox.textContent = 'Введите название подрядчика.';
+            errorBox.hidden = false;
+            nameInput.focus();
+            return;
+        }
+
+        createButton.disabled = true;
+        createButton.textContent = 'Создание…';
+        errorBox.hidden = true;
+
+        try {
+            const response = await fetch('/api/contractors', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name: name})
+            });
+            const result = await response.json();
+
+            if (response.status === 409 && result.existing_contractor) {
+                selectContractor(result.existing_contractor);
+                feedback.textContent = 'Подрядчик уже существует и выбран в списке.';
+                feedback.classList.add('is-warning');
+                closeModal();
+                return;
+            }
+            if (!response.ok) {
+                throw new Error(result.error || 'Не удалось создать подрядчика.');
+            }
+
+            selectContractor(result.contractor);
+            feedback.textContent = 'Подрядчик создан и выбран.';
+            feedback.classList.remove('is-warning');
+            closeModal();
+        } catch (error) {
+            errorBox.textContent = error.message;
+            errorBox.hidden = false;
+        } finally {
+            createButton.disabled = false;
+            createButton.textContent = 'Создать';
+        }
+    });
+}());
+</script>
+{% endif %}
+{% endblock %}

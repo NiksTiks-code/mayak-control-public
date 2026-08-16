@@ -1,0 +1,44 @@
+<div class="excel-board-scroll">
+    <div class="excel-board excel-board-structured"
+         style="grid-template-columns:{% for column in chessboard.columns %} {{ 0 if column.hidden else column.width }}px{% endfor %}; grid-template-rows:{% for row in chessboard.rows %} {{ 0 if row.hidden else row.height }}px{% endfor %};">
+        {% for cell in chessboard.cells %}
+            {% if not cell.hidden %}
+                {% set border = cell.style.get('borders', {}) if cell.style else {} %}
+                {% set horizontal = cell.style.get('horizontal') if cell.style else None %}
+                {% set vertical = cell.style.get('vertical') if cell.style else None %}
+                {% set cell_classes = 'excel-layout-cell cell-type-' ~ cell.cell_type ~ ' status-' ~ (cell.display_status|default(cell.status, true)) %}
+                {% set cell_style = 'grid-row:' ~ cell.grid_row ~ ' / span ' ~ cell.row_span ~ '; grid-column:' ~ cell.grid_col ~ ' / span ' ~ cell.col_span ~ '; --excel-fill:' ~ (cell.style.get('fill') if cell.style and cell.style.get('fill') else 'transparent') ~ ';' %}
+                {% if cell.href %}
+                <a href="{{ cell.href }}"
+                   class="{{ cell_classes }} is-room-link
+                          {% if border.get('top', {}).get('style') %} source-border-top{% endif %}
+                          {% if border.get('right', {}).get('style') %} source-border-right{% endif %}
+                          {% if border.get('bottom', {}).get('style') %} source-border-bottom{% endif %}
+                          {% if border.get('left', {}).get('style') %} source-border-left{% endif %}
+                          {% if horizontal == 'left' %} source-align-left{% elif horizontal == 'right' %} source-align-right{% endif %}
+                          {% if vertical == 'top' %} source-align-top{% elif vertical == 'bottom' %} source-align-bottom{% endif %}"
+                   style="{{ cell_style }}"
+                   data-coordinate="{{ cell.source_coordinate|default('') }}"
+                   title="{{ cell.text }}{% if cell.entrance %} · {{ cell.entrance }}{% endif %}{% if cell.floor %} · {{ cell.floor }}{% endif %}">
+                    <span>{{ cell.text }}</span>
+                    {% if cell.marking %}<small>{{ cell.marking }}</small>{% endif %}
+                </a>
+                {% else %}
+                <div class="{{ cell_classes }}
+                            {% if border.get('top', {}).get('style') %} source-border-top{% endif %}
+                            {% if border.get('right', {}).get('style') %} source-border-right{% endif %}
+                            {% if border.get('bottom', {}).get('style') %} source-border-bottom{% endif %}
+                            {% if border.get('left', {}).get('style') %} source-border-left{% endif %}
+                            {% if horizontal == 'left' %} source-align-left{% elif horizontal == 'right' %} source-align-right{% endif %}
+                            {% if vertical == 'top' %} source-align-top{% elif vertical == 'bottom' %} source-align-bottom{% endif %}"
+                     style="{{ cell_style }}"
+                     data-coordinate="{{ cell.source_coordinate|default('') }}"
+                     {% if cell.cell_type == 'unknown' and cell.text %}title="Не удалось уверенно определить тип ячейки"{% endif %}>
+                    {% if cell.text %}<span>{{ cell.text }}</span>{% endif %}
+                    {% if cell.cell_type == 'unknown' and cell.text %}<small>Не распознано</small>{% endif %}
+                </div>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+    </div>
+</div>

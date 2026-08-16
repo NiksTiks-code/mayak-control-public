@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Вход — МАЯК{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+
+{% block content %}
+<section class="login-layout">
+    <div class="login-intro">
+        <div class="login-logo-panel">
+            <img src="{{ url_for('static', filename='images/mayak-control-logo.png') }}"
+                 class="login-logo" alt="МАЯК Контроль">
+        </div>
+        <div class="login-intro-copy">
+            <span class="eyebrow">Цифровой контроль строительства</span>
+            <h1>Видеть прогресс.<br>Управлять результатом.</h1>
+            <p>Единая рабочая среда для заказчиков и подрядчиков: статусы, фотографии и готовность объектов в реальном времени.</p>
+            <div class="login-features" aria-label="Преимущества системы">
+                <span><i></i> Контроль по квартирам</span>
+                <span><i></i> Прозрачный прогресс</span>
+                <span><i></i> Единая отчётность</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="login-card glass-card">
+        <div class="login-card-heading">
+            <span class="status-dot"></span>
+            <span>Система доступна</span>
+        </div>
+        <h2>Добро пожаловать</h2>
+        <p class="muted">Войдите, чтобы продолжить работу в МАЯК</p>
+
+        <form method="POST" class="form-stack login-form">
+            <label class="field-group">
+                <span>Логин</span>
+                <span class="input-shell">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10z"/></svg>
+                    <input type="text" name="username" autocomplete="username" placeholder="Введите логин" required autofocus>
+                </span>
+            </label>
+
+            <label class="field-group">
+                <span>Пароль</span>
+                <span class="input-shell">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+                    <input type="password" name="password" autocomplete="current-password" placeholder="Введите пароль" required>
+                </span>
+            </label>
+
+            <button type="submit" class="button button-primary button-large button-full">
+                <span>Войти в систему</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </button>
+        </form>
+
+        <p class="login-security">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+            Защищённое соединение
+        </p>
+    </div>
+</section>
+{% endblock %}

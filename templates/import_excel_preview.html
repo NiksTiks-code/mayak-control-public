@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Предварительный просмотр импорта — МАЯК{% endblock %}
+
+{% block content %}
+<section class="page-heading fade-up">
+    <div>
+        <span class="eyebrow">Безопасный этап проверки</span>
+        <h1>Предварительный просмотр</h1>
+        <p>Шахматка ещё не сохранена. Проверьте распознавание структуры Excel.</p>
+    </div>
+    <a href="/import_excel" class="button button-secondary">Вернуться к загрузке</a>
+</section>
+
+<section class="preview-meta glass-card fade-up delay-one">
+    <div class="preview-context">
+        <div><span>Подрядчик</span><strong>{{ payload.contractor }}</strong></div>
+        <div><span>Объект</span><strong>{{ payload.address }}</strong></div>
+        <div><span>Система</span><strong>{{ payload.system }}</strong></div>
+        <div><span>Лист Excel</span><strong>{{ chessboard.sheet_name }}</strong></div>
+    </div>
+    <div class="preview-statistics">
+        <div><strong>{{ chessboard.statistics.rooms }}</strong><span>помещений</span></div>
+        <div><strong>{{ chessboard.statistics.entrances }}</strong><span>парадных</span></div>
+        <div><strong>{{ chessboard.statistics.floors }}</strong><span>этажей</span></div>
+        <div class="{% if chessboard.statistics.unknown %}has-warning{% endif %}"><strong>{{ chessboard.statistics.unknown }}</strong><span>неизвестных</span></div>
+    </div>
+</section>
+
+{% if chessboard.warnings %}
+<section class="import-warnings glass-card fade-up delay-two">
+    <span class="section-kicker">Предупреждения импортёра</span>
+    <ul>{% for warning in chessboard.warnings %}<li>{{ warning }}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+
+<section class="content-card glass-card fade-up delay-two">
+    <div class="section-title-row">
+        <div>
+            <span class="section-kicker">Структура листа</span>
+            <h2>{{ chessboard.sheet_name }}</h2>
+        </div>
+        <span class="section-count">{{ chessboard.statistics.cells }} элементов</span>
+    </div>
+    {% include "_excel_board.html" %}
+</section>
+
+<section class="preview-actions glass-card fade-up delay-three">
+    <form action="/import_excel/confirm/{{ token }}" method="POST">
+        <button type="submit" class="button button-primary button-large">Подтвердить импорт</button>
+    </form>
+    <form action="/import_excel/cancel/{{ token }}" method="POST">
+        <button type="submit" class="button button-ghost">Отменить</button>
+    </form>
+    <a href="/import_excel" class="button button-secondary">Вернуться к загрузке</a>
+</section>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}{{ work_name }} — МАЯК{% endblock %}
+
+{% block content %}
+<section class="page-heading fade-up">
+    <div>
+        <span class="breadcrumb">{{ current_contractor }} <b>/</b> {{ current_object }} <b>/</b> {{ current_system }}</span>
+        <h1>{{ work_name }}</h1>
+        <p>Карточка общих работ по выбранной инженерной системе.</p>
+    </div>
+    <a href="/?contractor={{ current_contractor }}&object={{ current_object }}&system={{ current_system }}" class="button button-secondary">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+        Назад
+    </a>
+</section>
+
+<section class="form-card glass-card fade-up delay-one">
+    <div class="section-title-row"><div><span class="section-kicker">Общие работы</span><h2>Данные выполнения</h2></div></div>
+    {% if error %}<div class="notice-error">{{ error }}</div>{% endif %}
+
+    <form method="POST" enctype="multipart/form-data" class="form-stack">
+        <input type="hidden" name="contractor" value="{{ current_contractor }}">
+        <input type="hidden" name="object" value="{{ current_object }}">
+        <input type="hidden" name="system" value="{{ current_system }}">
+
+        <div class="form-grid">
+            <label class="field-group">
+                <span>Статус</span>
+                <select name="status">
+                    <option value="white" {% if work_info.status == 'white' %}selected{% endif %}>Не выполнено</option>
+                    <option value="green" {% if work_info.status == 'green' %}selected{% endif %}>Выполнено</option>
+                </select>
+            </label>
+            <label class="field-group">
+                <span>Дата</span>
+                <input type="date" name="date" value="{{ work_info.date }}">
+            </label>
+        </div>
+
+        <label class="field-group upload-field">
+            <span>Фотографии</span>
+            <input type="file" name="photos" accept="image/*" multiple>
+            <small>Добавьте фотографии, подтверждающие выполнение работ.</small>
+        </label>
+
+        {% if work_info.photos %}
+        <div class="gallery-section">
+            <div class="section-title-row compact-row"><h3>Загруженные фотографии</h3><span class="section-count">{{ work_info.photos|length }}</span></div>
+            <div class="gallery">
+                {% for photo in work_info.photos %}
+                <img src="{{ url_for('static', filename='uploads/' + photo) }}" class="gallery-photo" alt="Фото работы {{ work_name }}">
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="form-actions">
+            <button type="submit" class="button button-primary button-large">Сохранить</button>
+            <a href="/?contractor={{ current_contractor }}&object={{ current_object }}&system={{ current_system }}" class="button button-ghost">Отмена</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

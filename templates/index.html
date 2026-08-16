@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_admin %}Dashboard{% else %}Рабочая область{% endif %} — МАЯК{% endblock %}
+
+{% block content %}
+{% if is_admin %}
+{% set totals = namespace(flats=0) %}
+{% for object_item in objects.values() %}
+    {% set totals.flats = totals.flats + object_item.flats %}
+{% endfor %}
+
+<section class="page-heading fade-up">
+    <div>
+        <span class="eyebrow">Операционный центр</span>
+        <h1>Контроль объектов</h1>
+        <p>Единая картина выполнения работ по объектам, системам и квартирам.</p>
+    </div>
+    {% if is_super_admin %}
+    <a href="/import_excel" class="button button-secondary">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 21h14a2 2 0 0 0 2-2v-4M3 15v4a2 2 0 0 0 2 2"/></svg>
+        <span>Импорт Excel</span>
+    </a>
+    {% endif %}
+</section>
+
+{% if not current_contractor %}
+<section class="stats-grid fade-up delay-one" aria-label="Сводная статистика">
+    <article class="metric-card glass-card">
+        <span class="metric-icon metric-blue">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M9 9h.01M15 9h.01M9 12h.01M15 12h.01"/></svg>
+        </span>
+        <div><strong>{{ objects|length }}</strong><span>Объектов</span></div>
+        <small>В активном контуре</small>
+    </article>
+
+    <article class="metric-card glass-card">
+        <span class="metric-icon metric-violet">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        </span>
+        <div><strong>{{ totals.flats }}</strong><span>Квартир</span></div>
+        <small>Во всех объектах</small>
+    </article>
+
+    <article class="metric-card glass-card">
+        <span class="metric-icon metric-cyan">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </span>
+        <div><strong>{{ contractors|length }}</strong><span>Подрядчика</span></div>
+        <small>Подключены к системе</small>
+    </article>
+
+    <button type="button" class="metric-card glass-card metric-highlight metric-card-action"
+            id="object-summary-open" aria-haspopup="dialog" aria-controls="object-summary-modal">
+        <span class="metric-icon metric-green">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18M7 16l4-5 4 3 5-7"/></svg>
+        </span>
+        <div><strong>{{ progress if show_object else 0 }}%</strong><span>Готовность объекта</span></div>
+        <small>Открыть краткий отчёт <b aria-hidden="true">↗</b></small>
+    </button>
+</section>
+
+{% if can_view_object_summary %}
+<div class="mayak-modal object-summary-modal" id="object-summary-modal" hidden>
+    <div class="mayak-modal-backdrop" data-close-object-summary></div>
+    <section class="mayak-modal-dialog object-summary-dialog glass-card" role="dialog" aria-modal="true"
+             aria-labelledby="object-summary-title">
+        <button type="button" class="mayak-modal-close" data-close-object-summary aria-label="Закрыть">×</button>
+        <span class="section-kicker">Live summary</span>
+        <h2 id="object-summary-title">Готовность объекта</h2>
+        <p>Выберите подрядчика, объект и инженерную систему.</p>
+
+        <div class="object-summary-filters">
+            <label class="field-group">
+                <span>Подрядчик</span>
+                <select id="summary-contractor">
+                    <option value="">Выберите подрядчика</option>
+                </select>
+            </label>
+            <label class="field-group">
+                <span>Объект</span>
+                <select id="summary-object" disabled>
+                    <option value="">Выберите объект</option>
+                </select>
+            </label>
+            <label class="field-group">
+                <span>Инженерная система</span>
+                <select id="summary-system" disabled>
+                    <option value="">Выберите систему</option>
+                </select>
+            </label>
+        </div>
+
+        <div class="summary-message" id="summary-message" aria-live="polite">
+            Выберите параметры, чтобы увидеть актуальную сводку.
+        </div>
+
+        <div class="object-summary-result" id="object-summary-result" hidden>
+            <div class="summary-heading">
+                <div>
+                    <span id="summary-context"></span>
+                    <h3 id="summary-address"></h3>
+                </div>
+                <div class="summary-progress"><span>Готовность</span><strong id="summary-progress">0%</strong></div>
+            </div>
+            <div class="progress-track"><div class="progress-fill" id="summary-progress-fill"></div></div>
+            <div class="summary-total"><span>Всего помещений</span><strong id="summary-total">0</strong></div>
+            <div class="summary-status-grid">
+                <div><span><i class="status-color status-green"></i> Выполнено</span><strong id="summary-done">0</strong></div>
+                <div><span><i class="status-color status-yellow"></i> Проверка</span><strong id="summary-check">0</strong></div>
+                <div><span><i class="status-color status-red"></i> Отказ / нет доступа</span><strong id="summary-denied">0</strong></div>
+                <div><span><i class="status-color status-white"></i> Не выполнено</span><strong id="summary-notdone">0</strong></div>
+            </div>
+            <div class="summary-spill" id="summary-spill"></div>
+        </div>
+    </section>
+</div>
+{% endif %}
+{% endif %}
+{% endif %}
+
+<section class="filter-panel glass-card fade-up delay-two">
+    <div class="section-title-row">
+        <div>
+            <span class="section-kicker">Рабочая область</span>
+            <h2>Выбор объекта и системы</h2>
+        </div>
+        {% if show_object %}
+        <span class="live-indicator"><i></i> Данные актуальны</span>
+        {% endif %}
+    </div>
+
+    <form method="GET" class="filter-grid">
+        {% if is_admin %}
+        <label class="field-group">
+            <span>Подрядчик</span>
+            <select name="contractor" onchange="this.form.submit()">
+                <option value="">Выберите подрядчика</option>
+                {% for contractor in contractors %}
+                <option value="{{ contractor }}" {% if contractor == current_contractor %}selected{% endif %}>{{ contractor }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        {% endif %}
+
+        <label class="field-group">
+            <span>Объект</span>
+            <select name="object" onchange="this.form.submit()" {% if not available_objects %}disabled{% endif %}>
+                <option value="">Выберите адрес</option>
+                {% for obj in available_objects %}
+                <option value="{{ obj }}" {% if obj == current_object %}selected{% endif %}>{{ obj }}</option>
+                {% endfor %}
+            </select>
+        </label>
+
+        <label class="field-group">
+            <span>Инженерная система</span>
+            <select name="system" onchange="this.form.submit()" {% if not current_object %}disabled{% endif %}>
+                <option value="">Выберите систему</option>
+                {% if current_object %}
+                    {% for system in objects[current_object]['systems'] %}
+                    <option value="{{ system }}" {% if system == current_system %}selected{% endif %}>{{ system }}</option>
+                    {% endfor %}
+                {% endif %}
+            </select>
+        </label>
+    </form>
+</section>
+
+{% if is_admin %}
+<section class="objects-section fade-up delay-three">
+    <div class="section-title-row">
+        <div>
+            <span class="section-kicker">Портфель</span>
+            <h2>Объекты</h2>
+        </div>
+        <span class="section-count">{{ objects|length }} адресов</span>
+    </div>
+
+    <div class="object-card-grid">
+        {% if is_admin and not current_contractor %}
+            {% for contractor_name, contractor_objects in contractors.items() %}
+                {% for obj in contractor_objects %}
+                <article class="object-card glass-card {% if obj == current_object %}is-active{% endif %}">
+                    <div class="object-card-top">
+                        <span class="object-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V9l8-5 8 5v12M9 21v-6h6v6M8 10h.01M12 10h.01M16 10h.01"/></svg></span>
+                        <span class="object-status">{{ contractor_name }}</span>
+                    </div>
+                    <h3>{{ obj }}</h3>
+                    <p>{{ objects[obj].flats }} квартир · {{ objects[obj].floors }} этажей</p>
+                    <div class="system-tags">{% for system in objects[obj].systems %}<span>{{ system }}</span>{% endfor %}</div>
+                    <div class="mini-progress"><i style="width: 0%;"></i></div>
+                    <div class="object-card-footer"><span>Готов к работе</span><a href="/?contractor={{ contractor_name }}&object={{ obj }}">Открыть <b>→</b></a></div>
+                </article>
+                {% endfor %}
+            {% endfor %}
+        {% else %}
+            {% for obj in available_objects %}
+            <article class="object-card glass-card {% if obj == current_object %}is-active{% endif %}">
+                <div class="object-card-top">
+                    <span class="object-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V9l8-5 8 5v12M9 21v-6h6v6M8 10h.01M12 10h.01M16 10h.01"/></svg></span>
+                    <span class="object-status">{{ current_contractor }}</span>
+                </div>
+                <h3>{{ obj }}</h3>
+                <p>{{ objects[obj].flats }} квартир · {{ objects[obj].floors }} этажей</p>
+                <div class="system-tags">{% for system in objects[obj].systems %}<span>{{ system }}</span>{% endfor %}</div>
+                <div class="mini-progress"><i style="width: {{ progress if obj == current_object and current_system else 0 }}%;"></i></div>
+                <div class="object-card-footer">
+                    <span>{% if obj == current_object and current_system %}{{ progress }}% готово{% else %}Готов к работе{% endif %}</span>
+                    <a href="/?contractor={{ current_contractor }}&object={{ obj }}">Открыть <b>→</b></a>
+                </div>
+            </article>
+            {% endfor %}
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
+{% if show_object %}
+<section class="workspace-section fade-up">
+    <div class="workspace-heading glass-card">
+        <div>
+            <span class="breadcrumb">{{ current_contractor }} <b>/</b> {{ current_object }} <b>/</b> {{ current_system }}</span>
+            <h2>Шахматка квартир</h2>
+            <p>Нажмите на квартиру, чтобы открыть карточку и обновить статус выполнения.</p>
+        </div>
+        {% if is_admin %}
+        <a href="/download_pdf?contractor={{ current_contractor }}&object={{ current_object }}&system={{ current_system }}" class="button button-secondary">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V2h9l4 4v3M14 2v5h5M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
+            Скачать PDF
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="progress-card glass-card">
+        <div class="progress-meta"><span>Готовность системы</span><strong>{{ progress }}%</strong></div>
+        <div class="progress-track"><div class="progress-fill" style="width: {{ progress }}%;"></div></div>
+        <div class="status-summary">
+            <span><i class="status-color status-green"></i> Выполнено <b>{{ green_count }}</b></span>
+            <span><i class="status-color status-yellow"></i> Проверка <b>{{ yellow_count }}</b></span>
+            <span><i class="status-color status-red"></i> Отказ <b>{{ red_count }}</b></span>
+            <span><i class="status-color status-white"></i> Не выполнено <b>{{ white_count }}</b></span>
+        </div>
+    </div>
+
+    <div class="board-card glass-card">
+        <div class="legend">
+            <span><i class="status-color status-green"></i> Выполнено</span>
+            <span><i class="status-color status-yellow"></i> Проверка</span>
+            <span><i class="status-color status-white"></i> Не выполнено</span>
+            <span><i class="status-color status-red"></i> Отказ / нет доступа</span>
+        </div>
+
+        {% if current_excel_chessboard %}
+            {% set chessboard = current_excel_chessboard %}
+            {% include "_excel_board.html" %}
+        {% else %}
+        <div class="board-scroll">
+            <div class="floors-board">
+            {% set flats_per_floor = (flats|length // floors) %}
+            {% for floor in range(floors, 0, -1) %}
+                <div class="floor">
+                    <div class="floor-name"><span>{{ floor }}</span><small>этаж</small></div>
+                    {% set start = (floor - 1) * flats_per_floor %}
+                    {% set end = floor * flats_per_floor %}
+                    {% for flat in flats[start:end] %}
+                    <a href="/flat/{{ flat.num }}?contractor={{ current_contractor }}&object={{ current_object }}&system={{ current_system }}"
+                       class="flat {{ flat.status }}" aria-label="Квартира {{ flat.num }}">
+                        <small>Квартира</small><strong>{{ flat.num }}</strong>
+                    </a>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="spill-card glass-card">
+        <div class="section-title-row compact-row">
+            <div><span class="section-kicker">Инженерные работы</span><h2>Розлив</h2></div>
+        </div>
+        <form method="POST" action="/save_spill?contractor={{ current_contractor }}&object={{ current_object }}&system={{ current_system }}">
+            {% if current_system == 'ТС' %}
+            <div class="spill-grid">
+                <label class="spill-block">
+                    <span><b>Верхний розлив</b><em>{{ spill.top }}%</em></span>
+                    <span class="progress-track"><i class="spill-fill" style="width: {{ spill.top }}%;"></i></span>
+                    <input type="number" name="top" min="0" max="100" value="{{ spill.top }}">
+                </label>
+                <label class="spill-block">
+                    <span><b>Нижний розлив</b><em>{{ spill.bottom }}%</em></span>
+                    <span class="progress-track"><i class="spill-fill" style="width: {{ spill.bottom }}%;"></i></span>
+                    <input type="number" name="bottom" min="0" max="100" value="{{ spill.bottom }}">
+                </label>
+            </div>
+            {% else %}
+            <label class="spill-block spill-single">
+                <span><b>Готовность розлива</b><em>{{ spill.single }}%</em></span>
+                <span class="progress-track"><i class="spill-fill" style="width: {{ spill.single }}%;"></i></span>
+                <input type="number" name="single" min="0" max="100" value="{{ spill.single }}">
+            </label>
+            {% endif %}
+            <button type="submit" class="button button-primary">Сохранить розлив</button>
+        </form>
+    </div>
+</section>
+{% else %}
+<section class="empty-state glass-card fade-up">
+    <span class="empty-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V9l8-5 8 5v12M9 21v-6h6v6"/></svg></span>
+    <h2>Выберите объект для начала работы</h2>
+    {% if is_admin %}
+    <p>Укажите подрядчика, адрес и инженерную систему в панели выше.</p>
+    {% else %}
+    <p>Выберите объект и инженерную систему в рабочей области выше.</p>
+    {% endif %}
+</section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if can_view_object_summary %}
+<script src="{{ url_for('static', filename='object-summary.js') }}" defer></script>
+{% endif %}
+{% endblock %}
