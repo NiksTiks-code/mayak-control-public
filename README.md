@@ -26,6 +26,21 @@ MAYAK gives customers and contractors one operational view of construction readi
 - **Rozliv tracking** — progress for single, upper and lower distribution layouts.
 - **PDF reporting** — printable object/system status summaries.
 
+## Current Operational Use
+
+MAYAK is used in real operational workflows by administrators and contractors. Its administrator-facing Telegram companion is accessed through a MAYAK platform account and provides status and progress reports plus operational notifications, including changes in the recorded number of people at monitored addresses.
+
+The latest owner acceptance confirmed that the people-count workflow and its Telegram notifications work as intended. Current web workflows were also exercised with repeated refreshes from two iPhones over LTE and completed successfully during those checks. These results describe the verified scenarios and do not guarantee uninterrupted availability under every network condition.
+
+This public snapshot documents the capability only; it contains no bot credentials, chat identifiers, production endpoints or operational data.
+
+The previews below use synthetic data and follow the current production layout. Their English labels are editorial annotations; a native English UI localization is not claimed.
+
+| Current Operations — English-labeled Preview | Telegram Workflow — English-labeled Preview |
+|---|---|
+| ![Sanitized English-labeled MAYAK operations preview](docs/screenshots/current-operations-en.png) | ![Sanitized English-labeled MAYAK Telegram workflow preview](docs/screenshots/telegram-operations-en.png) |
+| Current dashboard layout with reporting, access controls, people counting, and Telegram notification state. | Account-linked reports and notifications, including a synthetic people-count change. |
+
 ## Screenshots
 
 All screenshots below were captured from a local sanitized environment. Names, addresses, rooms and progress values are synthetic.
